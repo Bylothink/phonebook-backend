@@ -1,0 +1,43 @@
+version: "3.9"
+services:
+  database:
+    image: postgres:14.2
+    environment:
+      POSTGRES_PASSWORD: postgres00
+
+    networks:
+      - default
+
+    ports:
+      - 5432:5432
+
+    volumes:
+      - database_data:/var/lib/postgresql/data
+
+  backend:
+    build: .
+    image: phonebook/backend:latest
+    depends_on:
+      - database
+
+    environment:
+      PGHOST: "database"
+      PGPORT: "5432"
+
+    env_file:
+      - .env
+
+    networks:
+      - default
+
+    ports:
+      - 8000:8000
+
+    # volumes:
+    #   - ./src:/opt/phonebook
+
+networks:
+  default:
+
+volumes:
+  database_data:
