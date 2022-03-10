@@ -4,6 +4,7 @@ ENV DEBIAN_FRONTEND="noninteractive"
 RUN apt-get update \
  && apt-get install --yes --no-install-recommends \
         gosu \
+        postgresql-client \
         wait-for-it \
  \
  && rm -rf /var/lib/apt/lists/* \

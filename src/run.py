@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 #
 
-from app import app
+from phonebook import app
+
+
+def create_db_all():
+    from phonebook import db
+
+    db.create_all()
 
 
 def main():
