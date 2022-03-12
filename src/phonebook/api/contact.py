@@ -4,7 +4,7 @@ import strawberry
 
 
 @strawberry.type
-class Contact:
+class ContactType:
     id: int
 
     firstname: str

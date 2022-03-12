@@ -1,6 +1,13 @@
+from sqlalchemy import Index
 from typing import Union
 
 from ..db import db
+from ..db.types import TSVector
+
+__FULLTEXT__DEF__ = """to_tsvector('english', firstname || ' ' ||
+                          COALESCE(lastname, '') || ' ' ||
+                          COALESCE("address", '') || ' ' ||
+                          COALESCE(comment, ''))"""
 
 
 class Contact(db.Model):
@@ -34,3 +41,6 @@ class Contact(db.Model):
     lng = db.Column(db.Float, nullable=True)
 
     comment = db.Column(db.Text, nullable=True)
+
+    __fulltext__ = db.Column(TSVector, db.Computed(__FULLTEXT__DEF__, persisted=True))
+    __table_args__ = tuple(Index('contacts_fulltext', __fulltext__, postgresql_using='gin'))
