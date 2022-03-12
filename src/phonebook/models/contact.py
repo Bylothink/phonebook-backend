@@ -1,8 +1,26 @@
+from typing import Union
+
 from ..db import db
 
 
 class Contact(db.Model):
     __tablename__ = 'contacts'
+
+    @classmethod
+    def Create(cls, firstname: str, phone: str,
+                    lastname: Union[str, None] = None,
+                    address: Union[str, None] = None,
+                    lat: Union[float, None] = None,
+                    lng: Union[float, None] = None,
+                    comment: Union[str, None] = None):
+
+        contact = cls(firstname=firstname, lastname=lastname, phone=phone,
+                      address=address, lat=lat, lng=lng, comment=comment)
+
+        db.session.add(contact)
+        db.session.commit()
+
+        return contact
 
     id = db.Column(db.Integer, primary_key=True)
 
