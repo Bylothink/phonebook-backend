@@ -1,38 +1,50 @@
+from sqlalchemy import or_
 from typing import List, Union
 
 import strawberry
 from strawberry.types import Info
 
-from .. import logging
 from ..models import Contact
 from .contact import ContactType
 
-_logger = logging.getLogger(__name__)
+_TSQUERY_OPERATORS = ['&', '|', '!', '(', ')']
+
+
+def to_tsquery(query: str) -> str:
+    words = [word for word in query.split()]
+
+    tsquery = words[0]
+    for index in range(1, len(words)):
+        prev_word = words[index - 1]
+        this_word = words[index]
+
+        if prev_word in _TSQUERY_OPERATORS or this_word in _TSQUERY_OPERATORS:
+            tsquery += f" {this_word}"
+
+        else:
+            tsquery += f" & {this_word}"
+
+    return tsquery
 
 
 @strawberry.type
 class Query:
     @strawberry.field
     def contact(self, info: Info, id: int) -> ContactType:
-        _logger.info(f"Retrieving the contact with ID #{id}...")
-
-        contact = Contact.query.get(id)
-
-        return contact
+        return Contact.query.get(id)
 
     @strawberry.field
     def contacts(self, info: Info, query: Union[str, None] = None) -> List[ContactType]:
         if query:
-            _logger.info(f"Searching for contacts with the query `{query}`...")
+            ts_query = to_tsquery(query)
 
-            contacts = Contact.query.filter(Contact.firstname.ilike(f"%{query}%") | Contact.lastname.ilike(f"%{query}%")).all()
+            return Contact.query.filter(or_(
+                # Contact.phone.match(query),  # SMELLS: «... match esatto...»?
+                Contact.phone.ilike(f"%{query}%"),
+                Contact.__fulltext__.match(ts_query, postgresql_regconfig='Italian')
+            )).all()
 
-        else:
-            _logger.info("Retrieving all the contacts...")
-
-            contacts = Contact.query.all()
-
-        return contacts
+        return Contact.query.all()
 
 
 @strawberry.type
@@ -45,10 +57,7 @@ class Mutation:
                                          lng: Union[float, None] = None,
                                          comment: Union[str, None] = None) -> ContactType:
 
-        _logger.info("Creating a new contact...")
-        contact = Contact.Create(firstname, phone, lastname, address, lat, lng, comment)
-
-        return contact
+        return Contact.Create(firstname, phone, lastname, address, lat, lng, comment)
 
     @strawberry.mutation
     def update_contact(self, info: Info, id: int,
@@ -60,11 +69,17 @@ class Mutation:
                                          lng: Union[float, None] = None,
                                          comment: Union[str, None] = None) -> ContactType:
 
-        _logger.info(f"Updating the contact with ID #{id}...")
+        contact: Contact = Contact.query.get(id)
+        contact.update(firstname, lastname, phone, address, lat, lng, comment)
+
+        return contact
 
     @strawberry.mutation
-    def delete_contact(self, info: Info, id: int) -> ContactType:
-        _logger.info(f"Deleting the contact with ID #{id}...")
+    def delete_contact(self, info: Info, id: int) -> bool:
+        contact: Contact = Contact.query.get(id)
+        contact.delete()
+
+        return True
 
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
