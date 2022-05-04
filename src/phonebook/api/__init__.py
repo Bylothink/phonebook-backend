@@ -38,11 +38,7 @@ class Query:
         if query:
             ts_query = to_tsquery(query)
 
-            return Contact.query.filter(or_(
-                # Contact.phone.match(query),  # SMELLS: «... match esatto...»?
-                Contact.phone.ilike(f"%{query}%"),
-                Contact.__fulltext__.match(ts_query, postgresql_regconfig='Italian')
-            )).all()
+            return Contact.query.filter(Contact.__fulltext__.match(ts_query, postgresql_regconfig='Italian')).all()
 
         return Contact.query.all()
 
