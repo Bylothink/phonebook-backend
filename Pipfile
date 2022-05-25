@@ -8,6 +8,7 @@ flask = "*"
 flask-sqlalchemy = "*"
 psycopg2-binary = "*"
 strawberry-graphql = "*"
+flask-cors = "*"
 
 [dev-packages]
 pylint = "*"
